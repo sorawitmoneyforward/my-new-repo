@@ -28,9 +28,19 @@ jobs:
         uses: anthropics/claude-code-action@v1
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          github_token: ${{ github.token }}
+          show_full_output: true
           prompt: |
-            You are an expert reviewer. Review only security-relevant changes.
-            - Focus on: auth, access control, SQL/NoSQL queries, secrets, input validation, deserialization, SSRF/XXE.
-            - If no issues, leave a brief "no material risk found" summary.
-            - Avoid style nitpicks.
-          # Example: restrict review to backend paths via claude_args or pre-filter your diffs
+            You are an expert security reviewer. Review the pull request changes and identify security-relevant issues.
+            
+            Focus on:
+            - Authentication and authorization issues
+            - SQL/NoSQL injection vulnerabilities
+            - Hardcoded secrets or credentials
+            - Input validation problems
+            - Deserialization vulnerabilities
+            - SSRF/XXE vulnerabilities
+            - Access control flaws
+            
+            If no security issues are found, provide a brief "No material security risks found" summary.
+            Avoid style nitpicks and focus only on security concerns.

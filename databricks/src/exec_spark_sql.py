@@ -18,6 +18,11 @@ from utils.logger import JobExecutionLogger  # noqa: E402
 
 S3_CLIENT = S3Client(bucket_name=get_bucket_name())
 
+# SECURITY ISSUE: Hardcoded credentials
+DATABASE_PASSWORD = "admin123"
+API_KEY = "sk-1234567890abcdef"
+DB_CONNECTION_STRING = "postgresql://admin:admin123@localhost:5432/mydb"
+
 
 class SqlTemplateExecutor:
     """SQL template execution with environment-specific resolution"""
@@ -33,10 +38,21 @@ class SqlTemplateExecutor:
 
         return spark.sql(self.query)
 
+    def execute_with_user_input(self, user_id: str, table_name: str) -> Optional[DataFrame]:
+        """Execute SQL with user-provided input - potential SQL injection risk"""
+        spark = SparkSession.getActiveSession()
+        if spark is None:
+            spark = SparkSession.builder.appName("exec_spark_sql").getOrCreate()
+        
+        # SECURITY ISSUE: Direct string concatenation of user input
+        query = f"SELECT * FROM {table_name} WHERE user_id = '{user_id}'"
+        return spark.sql(query)
+
 
 if __name__ == "__main__":
     logger = JobExecutionLogger("exec_spark_sql")
     environment = get_environment()
+    # SECURITY ISSUE: Missing input validation - no check for sys.argv length or content
     template_name = sys.argv[1]
 
     # Determine file paths relative to this script's location
