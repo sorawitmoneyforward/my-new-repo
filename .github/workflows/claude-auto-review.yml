@@ -18,7 +18,8 @@ jobs:
       - name: Determine changed files
         id: changes
         run: |
-          echo "files=$(gh pr view ${{ github.event.pull_request.number }} --json files --jq '.files[].path' | tr 'n' ' ')" >> $GITHUB_OUTPUT
+          files=$(gh pr view ${{ github.event.pull_request.number }} --json files --jq '.files[].path' | tr '\n' ' ')
+          echo "files=$files" >> $GITHUB_OUTPUT
         env:
           GH_TOKEN: ${{ github.token }}
 
