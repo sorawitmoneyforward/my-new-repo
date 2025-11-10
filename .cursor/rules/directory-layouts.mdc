@@ -1,0 +1,62 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+
+The directory layout of this project is as follows.
+
+```
+├─aws/
+├── lambda/
+│   ├── get_anakin_score/
+│       ├── app.py          # lambda_handlerを実装
+│       └── Dockerfile      # 各モデルの開発環境が異なるため、それぞれでDockerfileを管理
+│   ├── get_obiwan_score/
+│   ├── get_vader_score/
+│   └── ...
+│
+├─databricks/
+│   ├── src/                 # 共通ロジックや重要ロジックが配置されている
+│   │   ├── fetch_daily_balances.py
+│   │   ├── ...
+│   │   └── utils
+│   │       └── s3_client.py
+│   │
+│   ├── scripts/             # src のモジュールを python script として実行することができる(localの動作確認用)
+│   │   ├── script_fetch_daily_balances.py
+│   │   └── ...
+│   │
+│   ├── notebooks/           # src のモジュールを databricks job として実行するための notebook file が格納されている
+│   │   ├── notebook_fetch_daily_balances.ipynb
+│   │   └── ...
+│   │
+│   ├── workflows/            # notebook job を実行する定義ファイル
+│   │   ├── vader.json
+│   │   └── ...
+│   │
+│   ├── tests/               # src に格納されている共通ロジック・重要ロジックを pytest でテストを実行する
+│   │   ├── test_fetch_daily_balances.py
+│   │   ├── input/
+│   │   │   ├── test_data_daily_balances_case_1.json
+│   │   │   ├── test_data_daily_balances_case_2.json
+│   │   │   └── ...
+│   │   └── expected_output/
+│   │       ├── test_data_daily_balances_case_1.pkl
+│   │       ├── test_data_daily_balances_case_2.pkl
+│   │       └── ...
+│   │
+│   ├── Dockerfile           # ローカル環境の Docker Container を定義した Dockerfile
+│   └── .env                 # 環境設定ファイル
+│
+└─view_models/              # データマートを構成するためのSQL
+    ├── view_accounts.sql                       # 口座リスト
+    ├── view_balance_histories.sql              # 時系列の口座残高データ
+    ├── view_cum_daily_asset_actions.sql        # 日次残高を計算するための中間データ(累計口座残高変動量)
+    ├── view_daily_asset_actions.sql            # 日次の口座残高変動量
+    ├── view_daily_balances_v2.sql              # 全口座の明細データが揃っている日からのみに絞ったdaily_balances(anakinはこちらを使用)
+    ├── view_daily_balances.sql                 # 日次残高データ(vaderはこちらを使用)
+    ├── view_date_range.sql                     # 日次残高を計算するための中間データ(十分な長さの日付リスト)
+    ├── view_latest_balances.sql                # 最新の口座残高
+    └ ...
+```

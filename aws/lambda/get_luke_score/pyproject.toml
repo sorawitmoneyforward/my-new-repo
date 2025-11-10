@@ -1,0 +1,79 @@
+[project]
+name = "get-luke-score"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = "==3.10.*"
+dependencies = [
+    "aws-lambda-powertools[parser]>=3.0.0",
+    "pandas>=2.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "python-lambda-local>=0.1.13",
+
+    # Formatting
+    "black>=24.2.0",
+    "isort>=5.13.2",
+    
+    # Linting
+    "flake8>=7.0.0",
+    "flake8-quotes>=3.4.0",
+    "pyproject-flake8>=0.0.1",
+    "mypy>=1.8.0",
+    
+    # Testing
+    "pytest>=8.0.0",
+]
+
+[tool.black]
+line-length = 120
+target-version = ["py310"]
+include = '\.pyi?$'
+
+[tool.isort]
+profile = "black"
+line_length = 120
+multi_line_output = 3
+include_trailing_comma = true
+
+[tool.flake8]
+max-line-length = 120
+extend-ignore = [
+    "D",     # all of the docstring rules
+    "E203",  # whitespace before ':'
+    "W503",  # line break before binary operator
+    "Q000",  # Double quotes found but single quotes preferred
+]
+docstring-convention = "google"
+exclude = [
+    ".git",
+    "__pycache__",
+    "build",
+    "dist",
+    "*.egg-info",
+    ".venv"
+]
+per-file-ignores = [
+    "__init__.py:F401",  # imported but unused
+    "test_*.py:D103",    # Missing docstring in public function
+]
+
+[tool.mypy]
+python_version = "3.9"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+check_untyped_defs = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+addopts = "-v" 
+
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["lib*"]
+exclude = ["local_s3*"]

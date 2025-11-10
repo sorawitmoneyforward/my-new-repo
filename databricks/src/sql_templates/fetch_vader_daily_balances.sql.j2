@@ -1,0 +1,12 @@
+-- VADER daily balances: datapoint>=5でフィルタしたdaily_balances
+SELECT
+  office_id,
+  date,
+  year,
+  month,
+  is_data_point,
+  closing_balance,
+  diff_closing_balance
+FROM
+  {{ resolve("zz-mfw-credit-scoring", "daily_balances_filtered_for_vader") }}
+;

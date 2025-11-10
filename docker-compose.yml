@@ -1,0 +1,36 @@
+version: "3.8"
+
+services:
+  databricks:
+    build:
+      context: ./databricks
+      dockerfile: Dockerfile
+    container_name: databricks-container
+    tty: true
+    stdin_open: true
+    volumes:
+      - ./databricks:/workspace/databricks
+
+  lambda_get_vader_score:
+    build:
+      context: ./aws/lambda/get_vader_score
+      dockerfile: Dockerfile.local
+    environment:
+      LOCAL_S3_DIR: /var/task/local_s3
+    volumes:
+      - ./aws/lambda/get_vader_score/local_s3:/var/task/local_s3
+    entrypoint: ["/usr/local/bin/aws-lambda-rie", "python3", "-m", "awslambdaric", "app.lambda_handler"]
+    ports:
+      - "9000:8080"
+
+  lambda_get_obiwan_score:
+    build:
+      context: ./aws/lambda/get_obiwan_score
+      dockerfile: Dockerfile.local
+    environment:
+      LOCAL_S3_DIR: /var/task/local_s3
+    volumes:
+      - ./aws/lambda/get_obiwan_score/local_s3:/var/task/local_s3
+    entrypoint: ["/usr/local/bin/aws-lambda-rie", "python3", "-m", "awslambdaric", "app.lambda_handler"]
+    ports:
+      - "9001:8081"

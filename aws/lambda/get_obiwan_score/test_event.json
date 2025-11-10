@@ -1,0 +1,18 @@
+{
+    "pathParameters": {
+        "office_id": 639
+    },
+    "queryStringParameters": {
+        "date": "2022-11-07",
+        "desired_amount": 2000000,
+        "feature14": 15990,
+        "feature15": 26556,
+        "feature17": 0.988992,
+        "feature26": 13.277822,
+        "feature31": 16970,
+        "feature35": -0.199359,
+        "feature45": 1200000,
+        "feature46": 0,
+        "feature47": 0
+    }
+}

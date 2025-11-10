@@ -1,0 +1,119 @@
+-- daily_balances_filtered_for_vader: vader score 計算用の日次残高データ作成処理
+CREATE OR REPLACE TABLE {{ resolve("zz-mfw-credit-scoring", "daily_balances_filtered_for_vader") }} AS
+WITH
+-- 1) 最終日付を取得（calander.sql にて最終日付を指定）
+latest_date AS (
+  SELECT MAX(date) AS latest_date
+  FROM {{ resolve("zz-mfw-credit-scoring", "daily_balances") }}
+),
+
+-- 1) 前日（＝処理対象日）の実データポイントがあるオフィスだけ抽出
+filtered_offices AS (
+  SELECT DISTINCT office_id
+  FROM {{ resolve("zz-mfw-credit-scoring", "daily_balances") }}
+),
+
+-- 2) office_id × date 毎に集約し、year/month列も追加
+daily_agg AS (
+  SELECT
+    db.office_id,
+    db.date,
+    MAX(CAST(db.is_data_point AS INT))        AS is_data_point,
+    SUM(db.closing_balance)                  AS closing_balance,
+    SUM(db.diff_closing_balance)             AS diff_closing_balance,
+    YEAR(db.date)                            AS year,
+    MONTH(db.date)                           AS month
+  FROM {{ resolve("zz-mfw-credit-scoring", "daily_balances") }} db
+  CROSS JOIN latest_date AS ld
+  WHERE
+    db.office_id IN (SELECT office_id FROM filtered_offices)
+    AND db.date BETWEEN
+      ADD_MONTHS(TRUNC(ld.latest_date, 'MM'), -12)
+      AND ld.latest_date
+  GROUP BY db.office_id, db.date
+),
+
+-- 3) 月ごとのデータポイント数を算出
+monthly_points AS (
+  SELECT
+    office_id,
+    year,
+    month,
+    SUM(is_data_point) AS monthly_point_count
+  FROM daily_agg
+  GROUP BY office_id, year, month
+),
+
+-- 4) 最新月の datapoint 数を取得
+latest_month_info AS (
+  SELECT
+    mp.office_id,
+    mp.monthly_point_count
+  FROM monthly_points mp
+  CROSS JOIN latest_date as ld
+  WHERE
+    mp.year  = YEAR(ld.latest_date)
+    AND mp.month = MONTH(ld.latest_date)
+),
+
+-- 5) datapoint 不足 (<5) 月のうち、最新月を除いた「最も新しい」月を特定
+last_short_month AS (
+  SELECT
+    mp.office_id,
+    MAX(MAKE_DATE(mp.year, mp.month, 1)) AS short_month_start
+  FROM monthly_points mp
+  LEFT JOIN latest_month_info lm
+    ON mp.office_id = lm.office_id
+  CROSS JOIN latest_date AS ld
+  WHERE
+    mp.monthly_point_count < 5
+    -- 最新月が不足していれば除外、それ以外ならすべて考慮
+    AND NOT (
+      lm.monthly_point_count < 5
+      AND mp.year  = YEAR(ld.latest_date)
+      AND mp.month = MONTH(ld.latest_date)
+    )
+  GROUP BY mp.office_id
+),
+
+-- 6) 上記の「次月1日」をカットオフ日とする
+cutoff_dates AS (
+  SELECT
+    office_id,
+    ADD_MONTHS(short_month_start, 1) AS cutoff_date
+  FROM last_short_month
+),
+
+-- 7) 最終的に全条件をかけて出力
+final AS (
+  SELECT
+    d.office_id,
+    d.date,
+    d.month,
+    d.year,
+    d.closing_balance,
+    d.diff_closing_balance,
+    d.is_data_point
+  FROM daily_agg d
+  LEFT JOIN latest_month_info lm
+    ON d.office_id = lm.office_id
+  LEFT JOIN cutoff_dates cd
+    ON d.office_id = cd.office_id
+  CROSS JOIN latest_date AS ld
+  WHERE
+    -- (A) 最新月をまるっと除外するケース
+    NOT (
+      lm.monthly_point_count < 5
+      AND YEAR(d.date)  = YEAR(ld.latest_date)
+      AND MONTH(d.date) = MONTH(ld.latest_date)
+    )
+    -- (B) datapoint 不足月の「次月以降」だけ残す
+    AND d.date >= COALESCE(cd.cutoff_date,
+        -- 不足月が一度も無い場合は、過去12ヶ月フィルタで十分なので
+        ADD_MONTHS(TRUNC(ld.latest_date, 'MM'), -12)
+      )
+)
+
+SELECT * FROM final
+ORDER BY office_id, date
+;

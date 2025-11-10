@@ -1,0 +1,48 @@
+-- cum_daily_transactions: 日次の入出金累積データの作成
+CREATE
+OR REPLACE TABLE {{ resolve("zz-mfw-credit-scoring", "cum_daily_transactions") }} AS
+WITH
+  -- 欠損日付を0で埋める
+  fill_daily_transactions AS (
+    SELECT
+      c.office_id AS office_id,
+      c.account_id AS account_id,
+      c.sub_account_id AS sub_account_id,
+      COALESCE(da.sum_amount, 0) AS amount,
+      COALESCE(da.plus_record_count, 0) AS plus_record_count,
+      COALESCE(da.minus_record_count, 0) AS minus_record_count,
+      COALESCE(da.record_count, 0) AS record_count,
+      c.date AS date,
+      da.sum_amount IS NOT NULL AS is_data_point
+    FROM
+      {{ resolve("zz-mfw-credit-scoring", "calendar") }} AS c
+      LEFT JOIN {{ resolve("zz-mfw-credit-scoring", "daily_transactions") }} AS da
+        ON c.date = da.date
+        AND c.office_id = da.office_id
+        AND c.account_id = da.account_id
+        AND c.sub_account_id = da.sub_account_id
+  )
+SELECT
+  fdt.office_id AS office_id,
+  fdt.account_id AS account_id,
+  fdt.sub_account_id AS sub_account_id,
+  COALESCE(
+    SUM(fdt.amount) OVER (
+      PARTITION BY
+        fdt.office_id,
+        fdt.account_id,
+        fdt.sub_account_id
+      ORDER BY
+        date DESC ROWS BETWEEN UNBOUNDED PRECEDING
+        AND 1 PRECEDING
+    ),
+    0
+  ) AS cumulative_amount,
+  DATE (DATE_TRUNC ("month", fdt.date)) AS month,
+  fdt.plus_record_count AS plus_record_count,
+  fdt.minus_record_count AS minus_record_count,
+  fdt.record_count AS record_count,
+  fdt.date AS date,
+  fdt.is_data_point
+FROM
+  fill_daily_transactions AS fdt;

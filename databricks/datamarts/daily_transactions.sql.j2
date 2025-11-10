@@ -1,0 +1,23 @@
+-- daily_transactions: 日次の入出金明細合計の取得
+CREATE OR REPLACE TABLE {{ resolve("zz-mfw-credit-scoring", "daily_transactions") }} AS
+SELECT
+  ta.office_id,
+  ta.account_id, -- 銀行アカウント
+  aa_uaa.sub_account_id, -- 銀行口座アカウント
+  DATE(aa_uaa.updated_at) AS date,
+  SUM(aa_uaa.amount) AS sum_amount,
+  COUNT_IF( aa_uaa.amount > 0) AS plus_record_count,
+  COUNT_IF( aa_uaa.amount < 0) AS minus_record_count,
+  COUNT(aa_uaa.amount) AS record_count
+FROM
+  {{ resolve("zz-mfw-credit-scoring", "target_accounts") }} AS ta
+  INNER JOIN {{ resolve("aggre_asset_union", "user_asset_act") }} AS aa_uaa ON ta.account_id = aa_uaa.account_id
+WHERE
+  aa_uaa.is_target = 1
+  AND aa_uaa.updated_at <= {{ current_date }}
+GROUP BY
+  ta.office_id,
+  ta.account_id,
+  aa_uaa.sub_account_id,
+  DATE(aa_uaa.updated_at) -- recognized_at は後から追加されたデータであるため、updated_at を使用
+;

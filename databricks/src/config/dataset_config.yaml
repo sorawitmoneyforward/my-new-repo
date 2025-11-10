@@ -1,0 +1,17 @@
+prod:
+  catalog: "mfhc_databricks_prod"
+  current_date: "DATE(TIMESTAMPADD(HOUR, 9, CURRENT_TIMESTAMP()))"
+  schema_rules:
+    "zz-mfw-credit-scoring": "zz-mfw-credit-scoring"
+    "ca_production": "ca_production"
+    "aggre_asset_union": "aggre_asset_union"
+    "aggre_production": "aggre_production"
+
+test:
+  catalog: "mfhc_databricks_test"
+  current_date: "DATE('2024-02-29')"
+  schema_rules:
+    "zz-mfw-credit-scoring": "zz-mfw-credit-scoring"
+    "ca_production": "zz-mfw-credit-scoring"
+    "aggre_asset_union": "zz-mfw-credit-scoring"
+    "aggre_production": "zz-mfw-credit-scoring"

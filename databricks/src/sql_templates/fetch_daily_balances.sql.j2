@@ -1,0 +1,13 @@
+-- Daily balances: datapoint>=5でフィルタしていないdaily_balances
+SELECT
+  office_id,
+  date,
+  year(date) as year,
+  month(date) as month,
+  is_data_point,
+  closing_balance,
+  diff_closing_balance,
+  record_count
+FROM
+  {{ resolve("zz-mfw-credit-scoring", "daily_balances") }}
+;

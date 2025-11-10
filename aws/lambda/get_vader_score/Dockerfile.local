@@ -1,0 +1,16 @@
+FROM public.ecr.aws/lambda/python:3.9
+
+WORKDIR /var/task
+
+COPY pyproject.toml .
+# for localhost
+RUN pip install -e '.[local]'
+
+RUN curl -Lo /usr/local/bin/aws-lambda-rie \
+    https://github.com/aws/aws-lambda-runtime-interface-emulator/releases/latest/download/aws-lambda-rie \
+    && chmod +x /usr/local/bin/aws-lambda-rie
+
+COPY app.py .
+
+CMD ["app.lambda_handler"]
+

@@ -1,0 +1,27 @@
+---
+description: About this project
+globs: 
+alwaysApply: true
+---
+# Overview
+
+This project provides credit information for our customers.
+Currently, we have credit ML models called Vader, Anakin, and Obi-Wan.
+Basically, These models predict credit scores based on customers' daily bank account balances, though the obi-wan requires additional parameters from API input.
+The project scope covers everything from building daily balances to providing model scores for our company's finance services.
+
+# Development guide
+
+We primarily use Python for development.
+The project will be deployed on the MLOps platform built on databricks in AWS.
+
+Please also refer to databricks/README.
+
+# Project Structure
+
+The project is organized as follows:
+- `aws/lambda`: Contains the lambda functions for external API
+- `databricks/`: Contains Databricks notebooks for data processing and model execution
+- `view_models/`: Contains data mart SQLs for the data pipeline
+
+Please also refer to .cursor/rules/directory-layouts.mdc

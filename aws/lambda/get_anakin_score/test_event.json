@@ -1,0 +1,8 @@
+{
+    "pathParameters": {
+        "office_id": 540
+    },
+    "queryStringParameters": {
+        "desired_amount": 500000
+    }
+}
