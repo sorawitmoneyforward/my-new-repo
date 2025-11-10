@@ -1,0 +1,24 @@
+{
+  "vader_scores": {
+    "b1": 0.3,
+    "b2": 0.3,
+    "b3": 0.3,
+    "b4": 0.5,
+    "b5": 0.5,
+    "b6": 0.4,
+    "b7": 0.3,
+    "b8": 0.4,
+    "b9": 0.3,
+    "b10": 0.3,
+    "b11": 0.3,
+    "b12": 0.3
+  },
+  "process_info": {
+    "office_id": 1,
+    "processed_at": "25-04-25",
+    "remove_latest_month_flg": true,
+    "first_month_year": { "year": 2024, "month": 5 },
+    "last_month_year": { "year": 2025, "month": 3 }
+  }
+}
+

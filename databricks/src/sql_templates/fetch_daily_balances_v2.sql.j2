@@ -1,0 +1,17 @@
+-- Daily balances V2: luke, anakin, obi-wanで使用中
+SELECT
+  office_id,
+  date,
+  year(date) as year,
+  month(date) as month,
+  max(is_data_point) as is_data_point,
+  sum(closing_balance) as closing_balance,
+  sum(diff_closing_balance) as diff_closing_balance,
+  sum(plus_record_count) as plus_record_count,
+  sum(minus_record_count) as minus_record_count,
+  sum(record_count) as record_count
+FROM
+  {{ resolve("zz-mfw-credit-scoring", "daily_balances_v2") }}
+GROUP BY
+  office_id, date
+;

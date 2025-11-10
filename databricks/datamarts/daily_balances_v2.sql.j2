@@ -1,0 +1,64 @@
+CREATE OR REPLACE TABLE {{ resolve("zz-mfw-credit-scoring", "daily_balances_v2") }}
+AS
+WITH 
+  -- 各口座の連携開始日の取得
+  activity_in_all_of_accounts_from AS (
+    SELECT
+      office_id,
+      MAX(oldest_date) AS from_date
+    FROM (
+      SELECT
+        office_id,
+        sub_account_id,
+        MIN(date) AS oldest_date
+      FROM
+        {{ resolve("zz-mfw-credit-scoring", "cum_daily_transactions") }}
+      GROUP BY
+        office_id,
+        sub_account_id
+    ) AS per_account
+    GROUP BY office_id
+  ),
+  balances AS (
+    SELECT
+      cdt.office_id AS office_id,
+      cdt.account_id AS account_id,
+      cdt.sub_account_id AS sub_account_id,
+      br.value AS closing_balance,
+      cdt.plus_record_count AS plus_record_count,
+      cdt.minus_record_count AS minus_record_count,
+      cdt.record_count AS record_count,
+      cdt.date AS date,
+      cdt.is_data_point
+    FROM
+      {{ resolve("zz-mfw-credit-scoring", "cum_daily_transactions") }} AS cdt
+      INNER JOIN activity_in_all_of_accounts_from AS aiaoa USING (office_id)
+      INNER JOIN {{ resolve("zz-mfw-credit-scoring", "balance_ranges") }} AS br ON
+        cdt.office_id = br.office_id
+        AND cdt.account_id = br.account_id
+        AND cdt.sub_account_id = br.sub_account_id
+        AND cdt.date BETWEEN br.start_at AND br.until_at
+    WHERE
+      cdt.date >= aiaoa.from_date
+  )
+SELECT
+  office_id,
+  account_id,
+  sub_account_id,
+  date,
+  closing_balance,
+  (closing_balance - LAG(closing_balance) OVER (
+      PARTITION BY office_id, account_id, sub_account_id
+      ORDER BY date
+  )) AS diff_closing_balance,
+  plus_record_count,
+  minus_record_count,
+  record_count,
+  is_data_point
+FROM balances
+ORDER BY
+  office_id,
+  account_id,
+  sub_account_id,
+  date
+;

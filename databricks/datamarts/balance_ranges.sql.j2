@@ -1,0 +1,17 @@
+-- balance_ranges: 残高履歴の取得（普通預金が対象）
+CREATE OR REPLACE TABLE {{ resolve("zz-mfw-credit-scoring", "balance_ranges") }} AS
+SELECT
+  ta.office_id AS office_id,
+  ta.account_id AS account_id,
+  ap_uadr.sub_account_id AS sub_account_id,
+  ap_uadr.value AS value,
+  ap_uadr.jpyrate AS jpyrate,
+  ap_uadr.start_at AS start_at,
+  ap_uadr.until_at AS until_at
+FROM
+  {{ resolve("zz-mfw-credit-scoring", "target_accounts") }} AS ta
+  INNER JOIN {{ resolve("aggre_production", "user_asset_det_ranges") }} AS ap_uadr ON ta.account_id = ap_uadr.account_id
+WHERE
+  ap_uadr.asset_subclass_id = 1 -- 普通預金
+  AND ap_uadr.start_at <= {{ current_date }}
+;

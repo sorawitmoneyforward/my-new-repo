@@ -1,0 +1,36 @@
+-- target_accounts: 日次残高データ算出対象アカウントの取得
+CREATE OR REPLACE TABLE {{ resolve("zz-mfw-credit-scoring", "target_accounts") }} AS
+WITH
+  -- office に紐づく accounts のみ取得
+  office_accounts AS (
+    SELECT DISTINCT
+      office_id,
+      account_id
+    FROM
+      {{ resolve("ca_production", "office_sub_account_group_list") }}
+  ),
+  -- 銀行口座への限定及びモックデータの除去
+  bank_accounts AS (
+    SELECT
+      a.id AS account_id
+      -- a.service_category_id -- 検証用
+    FROM
+      {{ resolve("aggre_asset_union", "accounts") }} AS a
+      LEFT JOIN {{ resolve("aggre_asset_union", "accounts_aggregations") }} AS aa USING (user_id, id)
+    WHERE
+      a.service_category_id = 2 -- 銀行口座
+      AND aa.is_mock = 0 -- モックデータの除去
+  )
+
+SELECT
+  oa.office_id,
+  oa.account_id
+FROM
+  office_accounts AS oa
+  INNER JOIN bank_accounts AS ba ON oa.account_id = ba.account_id
+  INNER JOIN {{ resolve("ca_production", "office") }} AS cp_o ON oa.office_id = cp_o.id -- クラウド会計のみに限定する場合必要
+WHERE
+  cp_o.office_type_id = 2 -- 法人
+  AND cp_o.ca_activated_at IS NOT NULL
+;
+

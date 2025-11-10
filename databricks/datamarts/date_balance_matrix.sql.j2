@@ -1,0 +1,39 @@
+-- date_balance_matrix: 最新残高スナップショットの日付軸でのマトリックス化処理
+CREATE OR REPLACE TABLE {{ resolve("zz-mfw-credit-scoring", "date_balance_matrix") }} AS
+WITH
+  -- 最新残高のスナップショットを取得
+  latest_balance_snapshot AS (
+    SELECT
+      office_id AS office_id,
+      account_id AS account_id,
+      sub_account_id AS sub_account_id,
+      value AS value
+    FROM
+      {{ resolve("zz-mfw-credit-scoring", "balance_ranges") }} QUALIFY ROW_NUMBER() OVER (
+        partition by
+          office_id,
+          account_id,
+          sub_account_id
+        ORDER BY
+          start_at DESC
+      ) = 1
+  )
+
+SELECT
+  lbs.office_id AS office_id,
+  lbs.account_id AS account_id,
+  lbs.sub_account_id AS sub_account_id,
+  lbs.value AS value,
+  c.date AS date
+FROM
+  latest_balance_snapshot AS lbs
+  INNER JOIN {{ resolve("zz-mfw-credit-scoring", "calendar") }} AS c
+    ON lbs.office_id = c.office_id
+    AND lbs.account_id = c.account_id
+    AND lbs.sub_account_id = c.sub_account_id
+ORDER BY
+  office_id,
+  account_id,
+  sub_account_id,
+  date
+;

@@ -1,0 +1,27 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# Commit message format
+
+```
+<type>[optional scope]: <description>
+
+[optional body]
+
+[optional footer(s)]
+```
+
+## Required
+
+- `<diff_context>`: Diff context compared with the main branch
+
+# GUIDELINES
+
+- Use conventional commits.
+- Types other than `feat` and `fix` are allowed: `build`, `chore`, `ci`, `docs`, `style`, `test`, `perf`, `refactor`, and others.
+- Output the commit command in a single, code block line for a copy and paste friendly output.
+- Keep the commit message title under 80 characters.
+- Only output the command for the commit, do not output any other text.
+- Use present tense in both the title and body of the commit.

@@ -1,0 +1,32 @@
+-- calendar: office_id, account_id, sub_account_idごとの日付ディメンションテーブル
+CREATE OR REPLACE TABLE {{ resolve("zz-mfw-credit-scoring", "calendar") }} AS
+WITH
+  -- 各口座の取引開始日を取得
+  account_date_ranges AS (
+    SELECT
+      office_id,
+      account_id,
+      sub_account_id,
+      MIN(date) AS start_date,
+      {{ current_date }} AS end_date
+    FROM
+      {{ resolve("zz-mfw-credit-scoring", "daily_transactions") }}
+    GROUP BY
+      office_id,
+      account_id,
+      sub_account_id
+  )
+SELECT
+  adr.office_id,
+  adr.account_id,
+  adr.sub_account_id,
+  date_col AS date
+FROM
+  account_date_ranges AS adr
+  LATERAL VIEW explode(
+    sequence(
+      adr.start_date,
+      adr.end_date,
+      interval 1 day
+    )
+  ) AS date_col; 

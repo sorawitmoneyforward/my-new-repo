@@ -1,0 +1,50 @@
+-- 日次残高データ集計処理: daily_balances
+CREATE OR REPLACE TABLE {{ resolve("zz-mfw-credit-scoring", "daily_balances") }} AS
+WITH
+  -- 日次残高の算出
+  closing_balances AS (
+    SELECT
+      c.office_id AS office_id,
+      c.account_id AS account_id,
+      c.sub_account_id AS sub_account_id,
+      c.date AS date,
+      cdt.is_data_point,
+      br.value AS closing_balance,
+      cdt.record_count AS record_count
+    FROM
+      {{ resolve("zz-mfw-credit-scoring", "calendar") }} AS c
+      INNER JOIN {{ resolve("zz-mfw-credit-scoring", "balance_ranges") }} AS br ON
+        c.office_id = br.office_id
+        AND c.account_id = br.account_id
+        AND c.sub_account_id = br.sub_account_id
+        AND c.date BETWEEN br.start_at AND br.until_at
+      INNER JOIN {{ resolve("zz-mfw-credit-scoring", "cum_daily_transactions") }} AS cdt ON
+        c.office_id = cdt.office_id
+        AND c.account_id = cdt.account_id
+        AND c.sub_account_id = cdt.sub_account_id
+        AND c.date = cdt.date
+  ),
+  -- 日次残高差分の算出
+  diff_calculated AS (
+    SELECT
+      office_id,
+      account_id,
+      sub_account_id,
+      date,
+      closing_balance,
+      record_count,
+      is_data_point,
+      (closing_balance - LAG(closing_balance) OVER (
+         PARTITION BY office_id, account_id, sub_account_id
+         ORDER BY date
+      )) AS diff_closing_balance
+    FROM closing_balances
+  )
+
+SELECT * FROM diff_calculated
+ORDER BY
+  office_id,
+  account_id,
+  sub_account_id,
+  date
+;
